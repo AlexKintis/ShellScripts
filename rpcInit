@@ -1,0 +1,73 @@
+#!/bin/sh
+
+function description() {
+		printf "Usage: rpcInit [CHOICES]... [FILE]...\n" 
+		printf "Initalize the rpcGen process for you automatically.\n" 
+		printf "\n  -a\t\tInitializes the whole creation of our rpc proccess automatically. \n\t\tYou can provide the filename you wish to create as <filename>.x\n" 
+		printf "\n  -f\t\tGenerates an .x file.\n" 
+		printf "\n  -f <file>\tTakes the configured file you made changes and execute the proccess.\n" 
+		printf "\nIf you provide the -arch argument at the end the process with be executed for arch based distros.\n" 
+		printf "\nError syntaxing command!!\n"
+
+}
+
+function createfile() {
+	echo -e "program prog {\n\tversion vers {\n\t\t void fun() = 1; \n\t} = 1;\n} = 0x23451111;" > $1 
+}
+
+function generaterpc() {
+	rpcgen -C -a $1;
+	mv $(find . -type f -name Makefile\*) Makefile;
+	if [[ ! $2 == "-arch" ]] 
+	then 
+		sed -i "s/^CFLAGS += -g.*$/CFLAGS += -g -DRPC_SVG_FG/" Makefile;
+		sed -i "s/^LDLIBS += -lnsl.*/LDLIBS += -lnsl/" Makefile;
+		sed -i "s/^RPCGENFLAGS =.*/RPCGENFLAGS = -C/" Makefile
+
+	else 
+		sed -i "s/^CFLAGS += -g.*$/CFLAGS += -g -DRPC_SVG_FG -I\/usr\/include\/tirpc\//" Makefile;
+		sed -i "s/^LDLIBS += -lnsl.*/LDLIBS += -lnsl -ltirpc/" Makefile;
+		sed -i "s/^RPCGENFLAGS =.*/RPCGENFLAGS = -C/" Makefile
+	fi
+}
+
+		#	createfile $2.x ;generaterpc $2.x $3 
+exFilename="rpcExample.x"
+case $1 in
+	"-a")
+		if [ -z $2 ] 
+		then	
+			createfile $exFilename; generaterpc $exFilename 
+		else 	
+			if [[ $2 == "-arch" ]]
+			then 
+				createfile $exFilename ;generaterpc $exFilename $2
+			elif [[ $2 != "-arch" ]] && [ -z $3 ]
+			then 
+				createfile $2.x;generaterpc $2.x 
+			elif [[ $3 == "-arch" ]]
+			then
+				createfile $2.x;generaterpc $2.x $3
+			else 
+				description
+			fi
+
+		fi
+		;; 
+	"-f")
+		if [ -z $2 ]  
+		then 
+			createfile $exFilename 
+		else	
+			if [ -f $2 ] 
+			then
+				generaterpc $2 $3 
+			else
+				description
+			fi
+		fi
+		;;
+	*)	
+		description;;
+
+esac
