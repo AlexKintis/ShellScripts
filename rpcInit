@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 function description() {
 		printf "Usage: rpcInit [CHOICES]... [FILE]...\n" 
